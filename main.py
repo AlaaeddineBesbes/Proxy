@@ -85,6 +85,7 @@ class TheServer:
         data = self.data
         # here we can parse and/or modify the data before send forward
         print(data)
+        print("-------------------------")
         self.channel[self.s].send(data)
 
 
