@@ -25,7 +25,6 @@ def main():
     conn,addr = s.accept()
     while True:
             try:
-                
                 data = conn. recv(buffer_size)
                 print(data.decode('utf-8'))
                 conn.send(data)

@@ -31,7 +31,7 @@ def main():
             data = connToBrowser.recv(buffer_size)
             print(data.decode('utf-8'))
             #creat a new thread to send the request to the webserver
-            _thread.start_new_thread(conn_string, (connToBrowser, data, addr))
+            _thread.start_new_thread(conn_string, (connToBrowser, data))
         except KeyboardInterrupt:
             s.close()
             print('SHutting down ..')
@@ -39,18 +39,18 @@ def main():
     
     s.close()
 
-def conn_string(conn,data,addr):
+def conn_string(conn,data):
     #getting the webserver and the port 
 
     try:
-        endPointProxy(conn, data,addr)
+        endPointProxy(conn, data)
     except Exception as e :
         print(e)
 
 def endPointProxy(conn,data):
     try:
         interProxyConnection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        interProxyConnection.coonect((localHost,endPointPP))
+        interProxyConnection.connect((localHost,endPointPP))
         interProxyConnection.send(data)
 
         while True:
