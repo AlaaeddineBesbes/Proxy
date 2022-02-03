@@ -1,9 +1,17 @@
 import socket
 import sys
 import _thread
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+keyPair = RSA.generate(3072)
+
+proxyKey=None
 
 def main():
     global listen_port, buffer_size, max_conn
+    global publicKey
+    global gotPublicKey
+
     listen_port = 1010
     max_conn = 5
     buffer_size = 8192
@@ -13,18 +21,30 @@ def main():
         s.bind(('',listen_port))
         s.listen(max_conn)
         print('EndPointProxy started successfully on port {}'.format(listen_port))
+        publicKey=s.recv(buffer_size)
     except Exception as e :
         print(e)
         sys.exit(2)
-
     while True:
         try:
             conn, addr =s.accept()
+            conn.send(keyPair.publickey().exportKey(format='PEM', passphrase=None, pkcs=1))
+            encryptor=PKCS1_OAEP.new(proxyKey)
+            decryptor = PKCS1_OAEP.new(keyPair)
+        except KeyboardInterrupt:
+            s.close()
+            print('SHutting down ..')
+            sys.exit(1)
+            
+    while True:
+        try:
+            
+            conn, addr =s.accept()
             #http request from the startPointProxy
-            data = conn.recv(buffer_size)
+            data =decryptor.decrypt(conn.recv(buffer_size))
             print(data)
             #send the request to the webServer
-            _thread.start_new_thread(conn_string, (conn, data, addr))
+            _thread.start_new_thread(conn_string, (conn, data, encryptor))
 
         except KeyboardInterrupt:
             s.close()
@@ -33,10 +53,10 @@ def main():
     
     s.close()
 
-def conn_string(conn,data,addr):
+def conn_string(conn,data,encryptor):
+    
     #getting the webserver and the port 
     try:
-        
         first_line = data.decode('utf-8').split("\n")[0]
         url = first_line.split(" ")[1]
         
@@ -63,11 +83,11 @@ def conn_string(conn,data,addr):
         
         print(webserver)
 
-        proxy_server(webserver, port, conn, data,addr)
+        proxy_server(webserver, port, conn, data,encryptor)
     except Exception as e :
         print(e)
 
-def proxy_server(webserver, port, conn,data,addr):
+def proxy_server(webserver, port, conn,data,encryptor):
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((webserver,port))
@@ -75,9 +95,8 @@ def proxy_server(webserver, port, conn,data,addr):
 
         while True:
             reply = s.recv(buffer_size)
-            
             if len(reply)>0:
-                conn.send(reply)
+                conn.send(encryptor.encrypt(reply))
                 print('server reply ',reply.decode('utf-8'))
             else:
                 break
@@ -87,6 +106,9 @@ def proxy_server(webserver, port, conn,data,addr):
         s.close()
         conn.close()
         sys.exit(1)
+
+
+
 
 
 
