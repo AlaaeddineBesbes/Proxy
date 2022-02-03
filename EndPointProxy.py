@@ -8,11 +8,12 @@ keyPair = RSA.generate(3072)
 proxyKey=None
 
 def main():
+    global keyPair
     global listen_port, buffer_size, max_conn
     global publicKey
     global gotPublicKey
 
-    listen_port = 1010
+    listen_port = 1011
     max_conn = 5
     buffer_size = 8192
 
@@ -21,28 +22,33 @@ def main():
         s.bind(('',listen_port))
         s.listen(max_conn)
         print('EndPointProxy started successfully on port {}'.format(listen_port))
-        publicKey=s.recv(buffer_size)
     except Exception as e :
         print(e)
         sys.exit(2)
-    while True:
+    exchangeKey=False
+    while not(exchangeKey):
         try:
             conn, addr =s.accept()
-            conn.send(keyPair.publickey().exportKey(format='PEM', passphrase=None, pkcs=1))
+            proxyKey=conn.recv(buffer_size)
+            proxyKey=RSA.importKey(proxyKey, passphrase=None)
+            conn.send(keyPair.publickey().exportKey())
             encryptor=PKCS1_OAEP.new(proxyKey)
             decryptor = PKCS1_OAEP.new(keyPair)
+            exchangeKey=True
         except KeyboardInterrupt:
             s.close()
             print('SHutting down ..')
             sys.exit(1)
-            
+
     while True:
         try:
             
             conn, addr =s.accept()
             #http request from the startPointProxy
-            data =decryptor.decrypt(conn.recv(buffer_size))
-            print(data)
+            data=conn.recv(buffer_size)
+            print('encrypted',data)
+            data =decryptor.decrypt(data)
+            print('decrpted',data)
             #send the request to the webServer
             _thread.start_new_thread(conn_string, (conn, data, encryptor))
 
