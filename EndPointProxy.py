@@ -5,6 +5,7 @@ import _thread
 def main():
     global listen_port, buffer_size, max_conn
     listen_port = 1010
+    
     max_conn = 5
     buffer_size = 8192
 
@@ -23,8 +24,9 @@ def main():
             #http request from the browser 
             data = conn.recv(buffer_size)
             #encryt and send data to the EndProxy
+            print(data.decode('utf-8'))
             #creat a new thread to send the request to the webserver
-            _thread.start_new_thread(conn_string, (conn, data))
+            _thread.start_new_thread(conn_string, (conn, data, addr))
         except KeyboardInterrupt:
             s.close()
             print('SHutting down ..')
@@ -32,13 +34,10 @@ def main():
     
     s.close()
 
-def conn_string(conn,data):
+def conn_string(conn,data,addr):
     #getting the webserver and the port 
-
-    
     try:
-        info=data.decode('utf-8')
-        first_line = info.split("\n")[0]
+        first_line = data.split("\n")[0]
         url = first_line.split(" ")[1]
 
         http_pos = url.find("://")
@@ -64,14 +63,14 @@ def conn_string(conn,data):
 
         print(webserver)
 
-        proxy_server(webserver, port, conn, data)
+        proxy_server(webserver, port, conn, data,addr)
     except Exception as e :
         print(e)
 
-def proxy_server(webserver, port, conn,data):
+def proxy_server(webserver, port, conn,data,addr):
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((webserver,port))
+        s.coonect((webserver,port))
         s.send(data)
 
         while True:
