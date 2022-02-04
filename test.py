@@ -5,13 +5,13 @@ import binascii
 keyPair = RSA.generate(3072)
 
 pubKey = keyPair.publickey()
-print(f"Public key:  (n={hex(pubKey.n)}, e={hex(pubKey.e)})")
-pubKeyPEM = pubKey.exportKey()
-print(pubKeyPEM.decode('ascii'))
 
-print(f"Private key: (n={hex(pubKey.n)}, d={hex(keyPair.d)})")
+pubKeyPEM = pubKey.exportKey()
+
+
 privKeyPEM = keyPair.exportKey()
-print(privKeyPEM.decode('ascii'))
+
+
 
 msg = b'A message for encryption'
 encryptor = PKCS1_OAEP.new(pubKey)
